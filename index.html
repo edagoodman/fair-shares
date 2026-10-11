@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fair Shares</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two short steps on the left, the till receipt pinned on the right; one column on a phone. */
+:root{
+  --bg:#E6EBE7; --surface:#F4F7F4; --ink:#17211D; --muted:#5C6B64; --line:#C3CEC7;
+  --accent:#0B6E5B; --accent-ink:#FFFFFF; --warn:#A8321E; --warn-bg:#F8E3DD;
+  --paper:#FCFCF6; --paper-ink:#1D1D1B; --paper-muted:#6A6A63;
+  --ui:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111815; --surface:#19221D; --ink:#E6EDE8; --muted:#93A39B; --line:#2F3D35;
+  --accent:#4CC3A5; --accent-ink:#06241C; --warn:#FF9A84; --warn-bg:#3A1D17;
+  --paper:#F0F0E8; --paper-ink:#1D1D1B; --paper-muted:#6A6A63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111815; --surface:#19221D; --ink:#E6EDE8; --muted:#93A39B; --line:#2F3D35;
+  --accent:#4CC3A5; --accent-ink:#06241C; --warn:#FF9A84; --warn-bg:#3A1D17;
+  --paper:#F0F0E8; --paper-ink:#1D1D1B; --paper-muted:#6A6A63; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--ui)}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:16px;padding-block:24px 56px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin-bottom:20px}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1}
+header p{margin:0;color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:32px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:16px}
+@media (max-width:860px){.side{position:static}}
+
+section{padding-block:20px;border-top:1px solid var(--line)}
+h2{font-size:1.15rem;font-weight:600;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+h2 .n{font:500 .8rem var(--mono);color:var(--accent)}
+.hint{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.block{background:var(--surface);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.line{display:flex;gap:8px;align-items:center}
+.grow{flex:1 1 0;min-width:0}
+
+input,button{font:inherit;color:inherit}
+input{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-width:0}
+.block input{background:var(--bg)}
+input.title{width:100%;font-weight:600;margin-bottom:20px}
+input.money{width:6.5em;flex:none;font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{cursor:pointer;border-radius:7px;border:1px solid var(--line);background:transparent;padding:8px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.x{border:0;padding:4px 8px;color:var(--muted);font-size:1.1rem;line-height:1;flex:none}
+button.x:hover{color:var(--warn)}
+.chip{border-radius:999px;padding:5px 12px;font-size:.92rem;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.lbl{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+.answer{background:var(--surface);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.answer h3{margin:0;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pay{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:1.1rem}
+.pay span{min-width:0;overflow-wrap:anywhere}
+.pay b{font-weight:600}
+.pay .amt{font-family:var(--mono);font-weight:500;color:var(--accent);white-space:nowrap}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:.95rem}
+.ok{color:var(--accent);font-weight:600}
+
+.receipt{background:var(--paper);color:var(--paper-ink);font:400 14px/1.55 var(--mono);padding:24px 22px 34px;
+  font-variant-numeric:tabular-nums;
+  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/14px 100%;
+          mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/14px 100%;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.18))}
+.receipt .c{text-align:center}
+.receipt .big{font:800 22px/1.3 var(--ui);letter-spacing:.02em}
+.receipt .lr{display:flex;justify-content:space-between;gap:12px}
+.receipt .lr span:first-child{min-width:0;overflow-wrap:anywhere}
+.receipt .lr span:last-child{white-space:nowrap}
+.receipt .b{font-weight:500}
+.receipt .s{color:var(--paper-muted);font-size:12.5px}
+.receipt .rule{border-top:1px dashed var(--paper-ink);margin:8px 0;opacity:.6}
+.receipt .gap{height:8px}
+textarea{width:100%;min-height:9em;font:13px var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:8px}
+.toast{color:var(--accent);font-size:.9rem}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Fair Shares</h1>
+    <p>Add everyone and what they paid. Add each bill and tap who shares it.</p>
+  </header>
+  <div class="cols">
+    <main id="editor"></main>
+    <aside class="side">
+      <div class="answer" id="answer"></div>
+      <div class="receipt" id="receipt"></div>
+      <div class="row">
+        <button class="primary" data-act="dl" id="btn-dl">Download receipt</button>
+        <button data-act="copy" id="btn-copy">Copy as text</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+      <textarea id="copybox" readonly hidden aria-label="Result as text"></textarea>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* ---------- Pure logic (no DOM) ---------- */
+const pence = s => { const x = parseFloat(String(s ?? '').replace(/[£,\s]/g, '')); return isFinite(x) && x > 0 ? Math.round(x * 100) : 0; };
+const fmt = p => '£' + (Math.abs(p) / 100).toFixed(2);
+
+// Fewest transfers: find the most zero-sum subgroups, then pair off inside each.
+function settle(bal) {
+  const xs = bal.filter(b => b.v !== 0), n = xs.length; let groups = [xs];
+  if (n && n <= 12) {
+    const N = 1 << n, sum = new Int32Array(N), dp = new Int8Array(N);
+    for (let m = 1; m < N; m++) {
+      const lb = m & -m; sum[m] = sum[m ^ lb] + xs[31 - Math.clz32(lb)].v;
+      let best = 0; for (let i = 0; i < n; i++) if (m >> i & 1) best = Math.max(best, dp[m ^ 1 << i]);
+      dp[m] = best + (sum[m] === 0 ? 1 : 0);
+    }
+    groups = []; let m = N - 1, cur = [];
+    while (m) {
+      const want = dp[m] - (sum[m] === 0 ? 1 : 0);
+      if (sum[m] === 0 && cur.length) { groups.push(cur); cur = []; }
+      for (let i = 0; i < n; i++) if ((m >> i & 1) && dp[m ^ 1 << i] === want) { cur.push(xs[i]); m ^= 1 << i; break; }
+    }
+    if (cur.length) groups.push(cur);
+  }
+  const out = [];
+  for (const g of groups) {
+    const d = g.filter(x => x.v < 0).map(x => ({ n: x.name, a: -x.v })), c = g.filter(x => x.v > 0).map(x => ({ n: x.name, a: x.v }));
+    while (d.length && c.length) {
+      d.sort((a, b) => b.a - a.a); c.sort((a, b) => b.a - a.a);
+      const a = Math.min(d[0].a, c[0].a); out.push({ from: d[0].n, to: c[0].n, a });
+      if (!(d[0].a -= a)) d.shift(); if (!(c[0].a -= a)) c.shift();
+    }
+  }
+  return out;
+}
+
+function compute(S) {
+  const ppl = S.people.map(p => ({ id: p.id, name: p.name.trim() || '?', paid: pence(p.paid), share: 0 }));
+  const warnings = [], bills = [];
+  S.bills.forEach(b => {
+    const amt = pence(b.amount), cov = ppl.filter(p => b.covers.includes(p.id)), label = b.label.trim() || 'Bill';
+    if (!amt) return;
+    if (!cov.length) { warnings.push(`Nobody is sharing "${label}" (${fmt(amt)}), so it isn't counted yet.`); return; }
+    const each = Math.floor(amt / cov.length), spare = amt - each * cov.length; // spare pennies go to the first few
+    cov.forEach((p, i) => p.share += each + (i < spare ? 1 : 0));
+    bills.push({ label, amt, who: cov.length === ppl.length && ppl.length > 1 ? 'everyone' : cov.map(p => p.name).join(', ') });
+  });
+  const bill = bills.reduce((a, b) => a + b.amt, 0), paid = ppl.reduce((a, p) => a + p.paid, 0), diff = paid - bill;
+  if (bill && diff < 0) warnings.push(`The bills come to ${fmt(bill)} but only ${fmt(paid)} is entered as paid. ${fmt(diff)} is missing.`);
+  if (diff > 0) warnings.push(`${fmt(paid)} was paid against bills of ${fmt(bill)}. That is ${fmt(diff)} too much.`);
+  const rows = ppl.filter(p => p.share || p.paid).map(p => ({ ...p, v: p.paid - p.share }));
+  return { bills, bill, paid, diff, rows, warnings, transfers: diff === 0 ? settle(rows) : [] };
+}
+
+const BLANK = () => ({ n: 100, title: '',
+  people: [{ id: 1, name: '', paid: '' }, { id: 2, name: '', paid: '' }],
+  bills: [{ id: 11, label: '', amount: '', covers: [1, 2] }] });
+const EXAMPLE = () => ({ n: 100, title: 'Curry night',
+  people: [{ id: 1, name: 'The Smiths', paid: '57' }, { id: 2, name: 'The Joneses', paid: '103' }, { id: 3, name: 'Sam & Alex', paid: '' }],
+  bills: [
+    { id: 11, label: 'Sam & Alex\'s order', amount: '23', covers: [3] },
+    { id: 12, label: 'Adults', amount: '104', covers: [1, 2] },
+    { id: 13, label: 'Kids', amount: '33', covers: [1, 2] }] });
+const isEmpty = S => !S.people.some(p => p.name.trim() || p.paid) && !S.bills.some(b => b.label.trim() || b.amount);
+if (typeof module !== 'undefined') module.exports = { compute, EXAMPLE, settle };
+</script>
+
+<script>
+/* ---------- UI ---------- */
+const KEY = 'fair-shares-v3';
+let S; try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!S || !S.people) S = BLANK();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = id => document.getElementById(id);
+let R, armed = false;
+
+function renderEditor() {
+  const focus = document.activeElement?.id;
+  $('editor').innerHTML = `
+  <input class="title" id="title" data-f="title" value="${esc(S.title || '')}" placeholder="Name this bill, e.g. Curry night" aria-label="Name of this bill">
+  <section><h2><span class="n">1</span>Who's in, and what they paid</h2>
+    <p class="hint">One line per person, couple or family. Leave "paid" blank if they paid nothing.</p>
+    <div class="stack">${S.people.map(p => `<div class="line">
+      <input class="grow" id="pn-${p.id}" data-f="pn" data-p="${p.id}" value="${esc(p.name)}" placeholder="Name" aria-label="Name">
+      <input class="money" id="pp-${p.id}" data-f="pp" data-p="${p.id}" value="${esc(p.paid)}" inputmode="decimal" placeholder="Paid £" aria-label="Amount paid">
+      <button class="x" data-act="delp" data-p="${p.id}" aria-label="Remove">×</button></div>`).join('')}
+      <div class="row"><button data-act="addp">+ Add</button></div></div></section>
+
+  <section><h2><span class="n">2</span>The bills</h2>
+    <p class="hint">Enter each bill and tap who shares it. It splits evenly between them.</p>
+    <div class="stack">${S.bills.map(b => `<div class="block">
+      <div class="line"><input class="grow" id="bl-${b.id}" data-f="bl" data-b="${b.id}" value="${esc(b.label)}" placeholder="What was it?" aria-label="Bill name">
+        <input class="money" id="ba-${b.id}" data-f="ba" data-b="${b.id}" value="${esc(b.amount)}" inputmode="decimal" placeholder="£0.00" aria-label="Amount">
+        <button class="x" data-act="delb" data-b="${b.id}" aria-label="Remove bill">×</button></div>
+      <div class="row">${S.people.map(p => `<button class="chip" data-act="tog" data-b="${b.id}" data-p="${p.id}" aria-pressed="${b.covers.includes(p.id)}" data-nameof="${p.id}">${esc(p.name || '?')}</button>`).join('')}</div>
+    </div>`).join('')}
+      <div class="row"><button data-act="addb">+ Add bill</button></div></div></section>
+
+  <section><div class="row"><button data-act="fresh">${armed ? 'Tap again to clear the amounts' : 'Start a new bill'}</button></div></section>`;
+  if (focus) $(focus)?.focus();
+  renderResult();
+}
+
+function receiptLines() {
+  const L = [{ t: 'c', big: 1, x: (S.title || 'Fair Shares').toUpperCase() },
+    { t: 'c', s: 1, x: new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }, { t: 'rule' }];
+  R.bills.forEach(b => L.push({ t: 'lr', l: b.label, r: fmt(b.amt) }, { t: 'lr', s: 1, l: '  ' + b.who, r: '' }));
+  L.push({ t: 'rule' }, { t: 'lr', b: 1, l: 'TOTAL', r: fmt(R.bill) }, { t: 'rule' });
+  if (R.diff) L.push({ t: 'c', b: 1, x: 'DOES NOT ADD UP YET' }, { t: 'c', s: 1, x: `paid and bills differ by ${fmt(R.diff)}` });
+  else if (!R.transfers.length) L.push({ t: 'c', b: 1, x: R.bill ? 'ALL SQUARE' : 'NO BILLS YET' });
+  else { L.push({ t: 'c', b: 1, x: 'TO SETTLE UP' }, { t: 'gap' });
+    R.transfers.forEach(x => L.push({ t: 'lr', l: 'FROM ' + x.from, r: '' }, { t: 'lr', b: 1, l: 'TO   ' + x.to, r: fmt(x.a) }, { t: 'gap' })); }
+  L.push({ t: 'rule' }, { t: 'c', s: 1, x: 'THANK YOU. UNTIL NEXT TIME.' });
+  return L;
+}
+
+function renderResult() {
+  R = compute(S); save();
+  const w = R.warnings.map(x => `<div class="warn">${esc(x)}</div>`).join('');
+  let body;
+  if (R.diff) body = '';
+  else if (!R.bill) body = '<div>Nothing to split yet.</div>' + (isEmpty(S) ? '<div><button data-act="example">Show me an example</button></div>' : '');
+  else if (!R.transfers.length) body = '<div class="ok">All square. Nobody owes anything.</div>';
+  else body = R.transfers.map(x => `<div class="pay"><span><b>${esc(x.from)}</b> to <b>${esc(x.to)}</b></span><span class="amt">${fmt(x.a)}</span></div>`).join('');
+  $('answer').innerHTML = `<h3>Who pays whom</h3>${w}${body}`;
+  $('receipt').innerHTML = receiptLines().map(l =>
+    l.t === 'rule' ? '<div class="rule"></div>' : l.t === 'gap' ? '<div class="gap"></div>' :
+    l.t === 'c' ? `<div class="c${l.big ? ' big' : ''}${l.b ? ' b' : ''}${l.s ? ' s' : ''}">${esc(l.x)}</div>` :
+    `<div class="lr${l.b ? ' b' : ''}${l.s ? ' s' : ''}"><span>${esc(l.l)}</span><span>${esc(l.r)}</span></div>`).join('');
+}
+
+function asText() {
+  const t = [`*${S.title || 'Fair Shares'}*`, `Total ${fmt(R.bill)}`, ''];
+  if (R.diff) t.push('Does not add up yet.'); else if (!R.transfers.length) t.push('All square.');
+  else R.transfers.forEach(x => t.push(`${x.from} to ${x.to}: ${fmt(x.a)}`));
+  t.push('', ...R.rows.map(h => `${h.name}: share ${fmt(h.share)}, paid ${fmt(h.paid)}`));
+  return t.join('\n');
+}
+
+async function download() {
+  const L = receiptLines(), W = 400, pad = 24, sc = 2, mono = '"DM Mono",ui-monospace,Menlo,monospace', ui = '"Bricolage Grotesque",system-ui,sans-serif';
+  try { await Promise.all([document.fonts.load('14px "DM Mono"'), document.fonts.load('500 14px "DM Mono"'), document.fonts.load('800 22px "Bricolage Grotesque"')]); } catch (e) {}
+  const hOf = l => l.t === 'rule' ? 18 : l.t === 'gap' ? 8 : l.big ? 34 : 22;
+  const H = pad * 2 + L.reduce((a, l) => a + hOf(l), 0) + 12;
+  const cv = document.createElement('canvas'); cv.width = W * sc; cv.height = H * sc;
+  const g = cv.getContext('2d'); g.scale(sc, sc);
+  g.fillStyle = '#FCFCF6'; g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(W, H - 8);
+  for (let x = W; x > 0; x -= 16) { g.lineTo(x - 8, H); g.lineTo(x - 16, H - 8); }
+  g.closePath(); g.fill();
+  const fit = (s, max) => { if (g.measureText(s).width <= max) return s; while (s.length > 1 && g.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; };
+  let y = pad; g.textBaseline = 'middle';
+  for (const l of L) {
+    const h = hOf(l), my = y + h / 2; y += h;
+    if (l.t === 'gap') continue;
+    if (l.t === 'rule') { g.strokeStyle = '#77776f'; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(pad, my); g.lineTo(W - pad, my); g.stroke(); continue; }
+    g.fillStyle = l.s ? '#6A6A63' : '#1D1D1B';
+    g.font = l.big ? `800 22px ${ui}` : `${l.b ? 500 : 400} ${l.s ? 12.5 : 14}px ${mono}`;
+    if (l.t === 'c') { g.textAlign = 'center'; g.fillText(fit(l.x, W - pad * 2), W / 2, my); continue; }
+    g.textAlign = 'right'; g.fillText(l.r, W - pad, my);
+    g.textAlign = 'left'; g.fillText(fit(l.l, W - pad * 2 - g.measureText(l.r).width - 10), pad, my);
+  }
+  cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'fair-shares-receipt.png';
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+}
+
+const toast = m => { $('toast').textContent = m; setTimeout(() => $('toast').textContent = '', 2500); };
+const bill = id => S.bills.find(b => b.id == id), person = id => S.people.find(p => p.id == id);
+
+document.addEventListener('input', e => {
+  const d = e.target.dataset, v = e.target.value; if (!d.f) return;
+  if (d.f === 'pn') { person(d.p).name = v; document.querySelectorAll(`[data-nameof="${d.p}"]`).forEach(el => el.textContent = v || '?'); }
+  if (d.f === 'pp') person(d.p).paid = v;
+  if (d.f === 'title') S.title = v;
+  if (d.f === 'bl') bill(d.b).label = v;
+  if (d.f === 'ba') bill(d.b).amount = v;
+  renderResult();
+});
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const d = btn.dataset, a = d.act, pid = +d.p; let focus;
+  if (a === 'dl') return download();
+  if (a === 'example') { if (isEmpty(S)) S = EXAMPLE(); return renderEditor(); }
+  if (a === 'copy') { const t = asText();
+    const fallback = () => { const box = $('copybox'); box.hidden = false; box.value = t; box.select(); toast('Select and copy the text below'); };
+    try { navigator.clipboard.writeText(t).then(() => toast('Copied'), fallback); } catch (err) { fallback(); } return; }
+  if (a === 'fresh') {
+    if (!armed) { armed = true; return renderEditor(); }
+    armed = false; S.bills = []; S.title = ''; S.people.forEach(p => p.paid = ''); return renderEditor();
+  }
+  armed = false;
+  if (a === 'addp') { const id = ++S.n; S.people.push({ id, name: '', paid: '' }); focus = 'pn-' + id; }
+  if (a === 'delp') { S.people = S.people.filter(p => p.id !== pid); S.bills.forEach(b => b.covers = b.covers.filter(x => x !== pid)); }
+  if (a === 'addb') { const id = ++S.n; S.bills.push({ id, label: '', amount: '', covers: S.people.map(p => p.id) }); focus = 'bl-' + id; }
+  if (a === 'delb') S.bills = S.bills.filter(b => b.id != d.b);
+  if (a === 'tog') { const b = bill(d.b); b.covers = b.covers.includes(pid) ? b.covers.filter(x => x !== pid) : [...b.covers, pid]; }
+  renderEditor(); if (focus) $(focus)?.focus();
+});
+
+renderEditor();
+</script>
